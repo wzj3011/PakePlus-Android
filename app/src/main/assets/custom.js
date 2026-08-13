@@ -16,7 +16,6 @@ if (typeof console !== 'object' || typeof console.log !== 'function') {
             if(document.body){ clearInterval(t); cb(); }
         },100);
     }
-
     waitBody(function(){
         // ========== 1. 处理链接跳转（修复 _blank） ==========
         document.addEventListener('click',function(e){
@@ -27,8 +26,7 @@ if (typeof console !== 'object' || typeof console.log !== 'function') {
                 location.href=a.href;
             }
         });
-
-        // ========== 2. 隐藏指定元素（新增 item right 相关） ==========
+// ========== 2. 隐藏指定元素（新增 item right 相关） ==========
         var sel=[
             '.article-copyright','#article-copyright',
             '.article-shares','#article-shares',
@@ -99,7 +97,7 @@ if (typeof console !== 'object' || typeof console.log !== 'function') {
             { label: '💬 网站留言', action: function(){ goTo('/liuyan'); } },
             { label: '🗑️ 清除缓存', action: clearCache },
             { label: '🖼️ 在线看图', action: goOnlineGallery }, 
-            { label: '🏠 返回主页', action: function(){ location.href = 'https://www.yituwan.com'; } },
+            { label: '🏠 返回主页', action: function(){ location.href = 'https://www.ytuwan.com'; } },
         ];
 
         for(var i=0;i<items.length;i++){
@@ -147,3 +145,62 @@ if (typeof console !== 'object' || typeof console.log !== 'function') {
         });
     });
 })();
+
+(function() {
+    // ==================== 白名单域名（允许正常弹窗） ====================
+    const whitelist = [
+        'pan.baidu.com',      // 百度网盘
+        // 可以继续添加其他域名，例如：
+        // 'login.taobao.com',
+        // 'oauth.qq.com'
+    ];
+
+    // 判断当前 URL 是否在白名单中（检查当前页面域名）
+    function isInWhitelist(url) {
+        if (!url) return false;
+        try {
+            const urlObj = new URL(url);
+            const hostname = urlObj.hostname;
+            return whitelist.some(domain => hostname.includes(domain));
+        } catch (e) {
+            // 如果 URL 格式不合法，直接返回 false
+            return false;
+        }
+    }
+
+    // ==================== 拦截 window.open ====================
+    const originalOpen = window.open;
+    window.open = function(url, name, features) {
+        // 如果目标 URL 在白名单中，则放行
+        if (isInWhitelist(url)) {
+            console.log('[防弹窗] 白名单放行:', url);
+            return originalOpen.apply(this, arguments);
+        }
+        console.warn('[防弹窗] 已拦截 window.open:', url);
+        return null;
+    };
+
+    // ==================== 拦截 showModalDialog ====================
+    window.showModalDialog = function(url) {
+        if (isInWhitelist(url)) {
+            console.log('[防弹窗] 白名单放行 showModalDialog:', url);
+            // 注意：showModalDialog 在现代浏览器中已废弃，但保留兼容
+            return null; // 如果确实需要，可以调用原始方法，但通常没必要
+        }
+        console.warn('[防弹窗] 已拦截 showModalDialog:', url);
+        return null;
+    };
+
+    // ==================== 拦截 createPopup（IE） ====================
+    if (window.createPopup) {
+        window.createPopup = function() {
+            console.warn('[防弹窗] 已拦截 createPopup');
+            return null;
+        };
+    }
+
+    console.log('[防弹窗] 已启动，白名单域名:', whitelist);
+})();
+
+
+        
